@@ -26,6 +26,7 @@ enum Op {
 	AND
 };
 
+
 const Op _op = OR;
 
 // g-functie (sigmoid)
@@ -39,7 +40,7 @@ double gprime (double x) {
 }//gprime
 
 // bepaal random waarde tussen a en b
-double randf(double a, double b){
+double randf(double a, double b) {
     return (rand()/(double)(RAND_MAX))*abs(a-b)+a;
 }
 
@@ -67,21 +68,17 @@ double op(double a, double b) {
 }
 
 
-void readFile(const char* filename, double input[]) {
-//	ifstream in(filename);
-//	if(! in.is_open())
-//		throw std::runtime_error("Error opening file");
-//	std::string line;
-//
-//	for (int i = 0; i < MAX && getline(in, line) && line.size() == 6; i++) {
-//		input[i] = line[0];
-//		input[i+1] = line[3];
-//	}
+void initFromFile(const char* filename, double input[]) {
+	
+	
 
 }
 
 int main (int argc, char* argv[ ]) {
-
+	if ( argc != 4 && argc != 5) {
+		cout << "Gebruik: " << argv[0] << " <inputs> <hiddens> <epochs> <optional: filename>" << endl;
+		return 1;
+	}//if
 	int inputs, hiddens;            // aantal invoer- en verborgen knopen
 	double input[MAX];              // de invoer is input[1]...input[inputs]
 	double inputtohidden[MAX][MAX]; // gewichten van invoerknopen 0..inputs
@@ -99,23 +96,28 @@ int main (int argc, char* argv[ ]) {
 	double deltahidden[MAX];        // de delta's voor de verborgen 
 	                                // knopen 1..hiddens
 	int epochs;                     // aantal trainingsvoorbeelden
-	int i, j, k;                    // tellertjes
-	//int seed = 1234;              // eventueel voor random-generator
-
-	if ( argc != 4 ) {
-		cout << "Gebruik: " << argv[0] << " <inputs> <hiddens> <epochs>" << endl;
-		return 1;
-	}//if
+	char* fName = NULL;
 	inputs = atoi (argv[1]);
 	hiddens = atoi (argv[2]);
 	epochs = atoi (argv[3]);
 	input[0] = -1;                  // invoer bias-knoop: altijd -1
 	acthidden[0] = -1;              // verborgen bias-knoop: altijd -1
 	srand (time(NULL));
+	ifstream in;
+
+	if(argc == 5) {
+		fName = argv[4];
+		in.open(fName);
+		if(! in.is_open())
+			throw std::runtime_error("Error opening file");
+	}
+
+	//int seed = 1234;              // eventueel voor random-generator
 
 	//TODO-1 initialiseer de gewichten random tussen -1 en 1: 
 	// inputtohidden en hiddentooutput
 	// rand ( ) levert geheel randomgetal tussen 0 en RAND_MAX; denk aan casten
+	int i, j;
 	for (i = 0; i < MAX; i++) {
 		hiddentooutput[i] = randf(-1, 1);
 		for (j = 0; j < MAX; j++) {
@@ -129,9 +131,22 @@ int main (int argc, char* argv[ ]) {
 		// als voorbeeld: de XOR-functie, waarvoor geldt dat inputs = 2
 		// int x = rand ( ) % 2; int y = rand ( ) % 2; int dexor = ( x + y ) % 2;
 		// input[1] = x; input[2] = y; target = dexor;
-		for(j = 0; j < inputs; j++)
-			input[j] = rand() % 2;
-
+		if (fName) {
+			std::string line;
+			getline(in, line);
+			for (int i = 0; i < inputs; i++) {
+				input[i] = line[i*3] - '0';
+			}
+			int x = line[0] - '0';
+			int y = line[3] - '0';
+			input[1] = x;
+			input[2] = y;
+			target = op(x, y);
+		} else {
+			for(j = 0; j < inputs; j++)
+				input[j] = rand() % 2;
+		}
+		
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
 
