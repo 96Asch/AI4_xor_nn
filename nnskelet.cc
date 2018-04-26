@@ -12,11 +12,21 @@
 #include <cmath>
 #include <fstream>
 #include <cstdlib>
+#include <string>
+
 using namespace std;
 
 const int MAX = 20;
 const double ALPHA = 0.1;
 const double BETA = 1.0;
+
+enum Op {
+	XOR,
+	OR,
+	AND
+};
+
+const Op _op = OR;
 
 // g-functie (sigmoid)
 double g (double x) {
@@ -31,6 +41,43 @@ double gprime (double x) {
 // bepaal random waarde tussen a en b
 double randf(double a, double b){
     return (rand()/(double)(RAND_MAX))*abs(a-b)+a;
+}
+
+double xoroperation(double a, double b) {
+//	return (a + b) % 2.0d;
+}
+
+double oroperation(double a, double b) {
+	return ((a + b) == 1.0d);
+}
+
+double andoperation(double a, double b) {
+	return ((a + b) == 2.0d);
+}
+
+
+double op(double a, double b) {
+	switch (_op) {
+		case XOR: return xoroperation(a, b);
+		case OR:  return oroperation(a, b);
+		case AND: return andoperation(a, b);
+		default: throw std::runtime_error("No operation specified");
+	}
+
+}
+
+
+void readFile(const char* filename, double input[]) {
+//	ifstream in(filename);
+//	if(! in.is_open())
+//		throw std::runtime_error("Error opening file");
+//	std::string line;
+//
+//	for (int i = 0; i < MAX && getline(in, line) && line.size() == 6; i++) {
+//		input[i] = line[0];
+//		input[i+1] = line[3];
+//	}
+
 }
 
 int main (int argc, char* argv[ ]) {
@@ -69,13 +116,12 @@ int main (int argc, char* argv[ ]) {
 	//TODO-1 initialiseer de gewichten random tussen -1 en 1: 
 	// inputtohidden en hiddentooutput
 	// rand ( ) levert geheel randomgetal tussen 0 en RAND_MAX; denk aan casten
-	for (i = 0; i < MAX; i++) 
+	for (i = 0; i < MAX; i++) {
+		hiddentooutput[i] = randf(-1, 1);
 		for (j = 0; j < MAX; j++) {
 			inputtohidden[i][j] = randf(-1, 1);;
 		}
-
-	for (i = 0; i < MAX; i++)
-			hiddentooutput[i] = randf(-1, 1);
+	}
 
 	for ( i = 0; i < epochs; i++ ) {
 
@@ -83,7 +129,9 @@ int main (int argc, char* argv[ ]) {
 		// als voorbeeld: de XOR-functie, waarvoor geldt dat inputs = 2
 		// int x = rand ( ) % 2; int y = rand ( ) % 2; int dexor = ( x + y ) % 2;
 		// input[1] = x; input[2] = y; target = dexor;
-		
+		for(j = 0; j < inputs; j++)
+			input[j] = rand() % 2;
+
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
 
