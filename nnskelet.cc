@@ -20,69 +20,81 @@ const double BETA = 1.0;
 
 // g-functie (sigmoid)
 double g (double x) {
-  return 1 / ( 1 + exp ( - BETA * x ) );
+	return 1 / ( 1 + exp ( - BETA * x ) );
 }//g
 
 // afgeleide van g
 double gprime (double x) {
-  return BETA * g (x) * ( 1 - g (x) );
+	return BETA * g (x) * ( 1 - g (x) );
 }//gprime
+
+// bepaal random waarde tussen a en b
+double randf(double a, double b){
+    return (rand()/(double)(RAND_MAX))*abs(a-b)+a;
+}
 
 int main (int argc, char* argv[ ]) {
 
-  int inputs, hiddens;            // aantal invoer- en verborgen knopen
-  double input[MAX];              // de invoer is input[1]...input[inputs]
-  double inputtohidden[MAX][MAX]; // gewichten van invoerknopen 0..inputs
-                                  // naar verborgen knopen 1..hiddens
-  double hiddentooutput[MAX];     // gewichten van verborgen knopen 0..hiddens
-                                  // naar de ene uitvoerknoop
-  double inhidden[MAX];           // invoer voor de verborgen knopen 1..hiddens
-  double acthidden[MAX];          // en de uitvoer daarvan
-  double inoutput;                // invoer voor de ene uitvoerknoop
-  double netoutput;               // en de uitvoer daarvan: de net-uitvoer
-  double target;                  // gewenste uitvoer
-  double error;                   // verschil tussen gewenste en 
-                                  // geproduceerde uitvoer
-  double delta;                   // de delta voor de uitvoerknoop
-  double deltahidden[MAX];        // de delta's voor de verborgen 
-                                  // knopen 1..hiddens
-  int epochs;                     // aantal trainingsvoorbeelden
-  int i, j, k;                    // tellertjes
-  //int seed = 1234;                // eventueel voor random-generator
+	int inputs, hiddens;            // aantal invoer- en verborgen knopen
+	double input[MAX];              // de invoer is input[1]...input[inputs]
+	double inputtohidden[MAX][MAX]; // gewichten van invoerknopen 0..inputs
+	                                // naar verborgen knopen 1..hiddens
+	double hiddentooutput[MAX];     // gewichten van verborgen knopen 0..hiddens
+	                                // naar de ene uitvoerknoop
+	double inhidden[MAX];           // invoer voor de verborgen knopen 1..hiddens
+	double acthidden[MAX];          // en de uitvoer daarvan
+	double inoutput;                // invoer voor de ene uitvoerknoop
+	double netoutput;               // en de uitvoer daarvan: de net-uitvoer
+	double target;                  // gewenste uitvoer
+	double error;                   // verschil tussen gewenste en 
+	                                // geproduceerde uitvoer
+	double delta;                   // de delta voor de uitvoerknoop
+	double deltahidden[MAX];        // de delta's voor de verborgen 
+	                                // knopen 1..hiddens
+	int epochs;                     // aantal trainingsvoorbeelden
+	int i, j, k;                    // tellertjes
+	//int seed = 1234;              // eventueel voor random-generator
 
-  if ( argc != 4 ) {
-    cout << "Gebruik: " << argv[0] << " <inputs> <hiddens> <epochs>" << endl;
-    return 1;  
-  }//if
-  inputs = atoi (argv[1]);
-  hiddens = atoi (argv[2]);
-  epochs = atoi (argv[3]);
-  input[0] = -1;                  // invoer bias-knoop: altijd -1
-  acthidden[0] = -1;              // verborgen bias-knoop: altijd -1
-  srand (time(NULL));
+	if ( argc != 4 ) {
+		cout << "Gebruik: " << argv[0] << " <inputs> <hiddens> <epochs>" << endl;
+		return 1;
+	}//if
+	inputs = atoi (argv[1]);
+	hiddens = atoi (argv[2]);
+	epochs = atoi (argv[3]);
+	input[0] = -1;                  // invoer bias-knoop: altijd -1
+	acthidden[0] = -1;              // verborgen bias-knoop: altijd -1
+	srand (time(NULL));
 
-  //TODO-1 initialiseer de gewichten random tussen -1 en 1: 
-  // inputtohidden en hiddentooutput
-  // rand ( ) levert geheel randomgetal tussen 0 en RAND_MAX; denk aan casten
+	//TODO-1 initialiseer de gewichten random tussen -1 en 1: 
+	// inputtohidden en hiddentooutput
+	// rand ( ) levert geheel randomgetal tussen 0 en RAND_MAX; denk aan casten
+	for (i = 0; i < MAX; i++) 
+		for (j = 0; j < MAX; j++) {
+			inputtohidden[i][j] = randf(-1, 1);;
+		}
 
-  for ( i = 0; i < epochs; i++ ) {
+	for (i = 0; i < MAX; i++)
+			hiddentooutput[i] = randf(-1, 1);
 
-    //TODO-2 lees een voorbeeld in naar input en target, of genereer dat ter plekke:
-    // als voorbeeld: de XOR-functie, waarvoor geldt dat inputs = 2
-    // int x = rand ( ) % 2; int y = rand ( ) % 2; int dexor = ( x + y ) % 2;
-    // input[1] = x; input[2] = y; target = dexor;
-    
-    //TODO-3 stuur het voorbeeld door het netwerk
-    // reken inhidden's uit, acthidden's, inoutput en netoutput
+	for ( i = 0; i < epochs; i++ ) {
 
-    //TODO-4 bereken error, delta, en deltahidden
+		//TODO-2 lees een voorbeeld in naar input en target, of genereer dat ter plekke:
+		// als voorbeeld: de XOR-functie, waarvoor geldt dat inputs = 2
+		// int x = rand ( ) % 2; int y = rand ( ) % 2; int dexor = ( x + y ) % 2;
+		// input[1] = x; input[2] = y; target = dexor;
+		
+		//TODO-3 stuur het voorbeeld door het netwerk
+		// reken inhidden's uit, acthidden's, inoutput en netoutput
 
-    //TODO-5 update gewichten hiddentooutput en inputtohidden
+		//TODO-4 bereken error, delta, en deltahidden
 
-  }//for
+		//TODO-5 update gewichten hiddentooutput en inputtohidden
 
-  //TODO-6 beoordeel het netwerk en rapporteer
+	}//for
 
-  return 0;
+	//TODO-6 beoordeel het netwerk en rapporteer
+
+	return 0;
 }//main
 
