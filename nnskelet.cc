@@ -76,6 +76,20 @@ bool op_success(double a, double b, bool c) {
 
 //*********************************************************************
 
+void copyArray(double src[MAX], double* dest) {
+	for(int i = 1; i < MAX; i++)
+		dest[i] = src[i];
+}
+
+void setHiddenLayer(size_t size, double bias, double weights[MAX][MAX], double activation[MAX], double* output) {
+	for (unsigned k = 1; k < size; k++) {
+		for (unsigned j = 0; j < size; j++) {
+			output[k] += weights[k][j] * activation[j];
+		}
+	}
+	for(unsigned i = 1; i < size; i++)
+		output[i] = g(output[i]+ bias);
+}
 
 
 int main (int argc, char* argv[ ]) {
@@ -152,7 +166,15 @@ int main (int argc, char* argv[ ]) {
 		
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
+		copyArray(input, inhidden); //inputs zijn de invoer van de eerste laag van de hidden knopen.
+		setHiddenLayer(hiddens, input[0], inputtohidden, inhidden, acthidden); // bereken de output van de hidden laag.
+
+		//Set inoutput by calculating acthidden.
+		//Set netoutput to 0 or 1 based on inoutput.
+
+
 		
+
 		//TODO-4 bereken error, delta, en deltahidden
 		error = target - netoutput;
 		delta = error * gprime(inoutput);
@@ -170,6 +192,7 @@ int main (int argc, char* argv[ ]) {
 
 	//TODO-6 beoordeel het netwerk en rapporteer
 
+	in.close();
 	return 0;
 }//main
 
