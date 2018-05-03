@@ -16,7 +16,7 @@
 
 using namespace std;
 
-const int MAX = 20;
+const unsigned MAX = 20;
 const double ALPHA = 0.1;
 const double BETA = 1.0;
 
@@ -27,7 +27,7 @@ enum Op {
 };
 
 
-const Op _op = OR;
+const Op _op = XOR;
 
 // g-functie (sigmoid)
 double g (double x) {
@@ -44,18 +44,21 @@ double randf(double a, double b) {
     return (rand()/(double)(RAND_MAX))*abs(a-b)+a;
 }
 
-double xoroperation(double a, double b) {
-//	return (a + b) % 2.0d;
+//*********************************************************************
+//Operation-dependent expected value-functions
+static inline double xoroperation(double a, double b) {
+	return ((int)(std::round(a) + std::round(b)) % 2 == 1);
 }
 
-double oroperation(double a, double b) {
-	return ((a + b) == 1.0d);
+static inline double oroperation(double a, double b) {
+	return ((int)(std::round(a) + std::round(b)) >= 1);
 }
 
-double andoperation(double a, double b) {
-	return ((a + b) == 2.0d);
+static inline double andoperation(double a, double b) {
+	return ((int)(std::round(a) + std::round(b)) >= 2);
 }
 
+//*********************************************************************
 
 double op(double a, double b) {
 	switch (_op) {
@@ -64,21 +67,23 @@ double op(double a, double b) {
 		case AND: return andoperation(a, b);
 		default: throw std::runtime_error("No operation specified");
 	}
-
 }
 
 
-void initFromFile(const char* filename, double input[]) {
-	
-	
-
+bool op_success(double a, double b, bool c) {
+	return (op(a, b) == c);
 }
+
+//*********************************************************************
+
+
 
 int main (int argc, char* argv[ ]) {
 	if ( argc != 4 && argc != 5) {
 		cout << "Gebruik: " << argv[0] << " <inputs> <hiddens> <epochs> <optional: filename>" << endl;
 		return 1;
 	}//if
+//{
 	int inputs, hiddens;            // aantal invoer- en verborgen knopen
 	double input[MAX];              // de invoer is input[1]...input[inputs]
 	double inputtohidden[MAX][MAX]; // gewichten van invoerknopen 0..inputs
@@ -104,11 +109,11 @@ int main (int argc, char* argv[ ]) {
 	acthidden[0] = -1;              // verborgen bias-knoop: altijd -1
 	srand (time(NULL));
 	ifstream in;
-
+//}
 	if(argc == 5) {
 		fName = argv[4];
 		in.open(fName);
-		if(! in.is_open())
+		if(!in.is_open())
 			throw std::runtime_error("Error opening file");
 	}
 
@@ -117,7 +122,7 @@ int main (int argc, char* argv[ ]) {
 	//TODO-1 initialiseer de gewichten random tussen -1 en 1: 
 	// inputtohidden en hiddentooutput
 	// rand ( ) levert geheel randomgetal tussen 0 en RAND_MAX; denk aan casten
-	int i, j;
+	unsigned i, j, k;
 	for (i = 0; i < MAX; i++) {
 		hiddentooutput[i] = randf(-1, 1);
 		for (j = 0; j < MAX; j++) {
@@ -126,34 +131,41 @@ int main (int argc, char* argv[ ]) {
 	}
 
 	for ( i = 0; i < epochs; i++ ) {
-
 		//TODO-2 lees een voorbeeld in naar input en target, of genereer dat ter plekke:
 		// als voorbeeld: de XOR-functie, waarvoor geldt dat inputs = 2
 		// int x = rand ( ) % 2; int y = rand ( ) % 2; int dexor = ( x + y ) % 2;
 		// input[1] = x; input[2] = y; target = dexor;
+		//input lijkt op: 0, 1, 1
 		if (fName) {
 			std::string line;
-			getline(in, line);
-			for (int i = 0; i < inputs; i++) {
-				input[i] = line[i*3] - '0';
+			if (getline(in, line)) {
+				input[1] = line[0] - '0';
+				input[2] = line[3] - '0';
+				target = line[6] - '0';
+			} else {
+				throw std::runtime_error("EOF reached while requesting more training data");
 			}
-			int x = line[0] - '0';
-			int y = line[3] - '0';
-			input[1] = x;
-			input[2] = y;
-			target = op(x, y);
 		} else {
-			for(j = 0; j < inputs; j++)
-				input[j] = rand() % 2;
+			input[1] = rand() % 2;
+			input[2] = rand() % 2;
 		}
 		
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
-
+		
 		//TODO-4 bereken error, delta, en deltahidden
+		error = target - netoutput;
+		delta = error * gprime(inoutput);
+		for (j = 0; j < MAX; j++)
+			deltahidden[j] = gprime(inhidden[j]) * hiddentooutput[j] * delta;
 
 		//TODO-5 update gewichten hiddentooutput en inputtohidden
-
+		for (j = 0; j < MAX; j++)
+			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
+		
+		for (k = 0; k < MAX; k++)
+			for (j = 0; j < MAX; j++)
+				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
 	}//for
 
 	//TODO-6 beoordeel het netwerk en rapporteer
