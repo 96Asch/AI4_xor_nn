@@ -81,14 +81,21 @@ void copyArray(double src[MAX], double* dest) {
 		dest[i] = src[i];
 }
 
-void setHiddenLayer(size_t size, double bias, double weights[MAX][MAX], double activation[MAX], double* output) {
-	for (unsigned k = 1; k < size; k++) {
-		for (unsigned j = 0; j < size; j++) {
-			output[k] += weights[k][j] * activation[j];
+void setHiddenLayer(size_t inputs, size_t hiddens, double bias, double weights[MAX][MAX], double activation[MAX], double* output) {
+	for (unsigned i = 0; i < inputs; i++) {
+		for (unsigned j = 1; j < hiddens; j++) {
+			output[i+1] += weights[i][j] * activation[j];
 		}
 	}
-	for(unsigned i = 1; i < size; i++)
+	for(unsigned i = 1; i < hiddens; i++)
 		output[i] = g(output[i]+ bias);
+}
+
+void setOutputLayer(size_t size, double bias, double weights[MAX], double activation[MAX], double & output) {
+	for(unsigned i = 1; i < size; i++) {
+		output += weights[i] * activation[i];
+	}
+	output = g(output + bias);
 }
 
 
@@ -162,18 +169,21 @@ int main (int argc, char* argv[ ]) {
 		} else {
 			input[1] = rand() % 2;
 			input[2] = rand() % 2;
+			target = op(input[1], input[2]);
 		}
 		
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
 		copyArray(input, inhidden); //inputs zijn de invoer van de eerste laag van de hidden knopen.
-		setHiddenLayer(hiddens, input[0], inputtohidden, inhidden, acthidden); // bereken de output van de hidden laag.
+		setHiddenLayer(inputs, hiddens, input[0], inputtohidden, inhidden, acthidden); // bereken de output van de hidden laag.
 
 		//Set inoutput by calculating acthidden.
+		setOutputLayer(hiddens, acthidden[0], hiddentooutput, acthidden, inoutput);
 		//Set netoutput to 0 or 1 based on inoutput.
-
-
+		netoutput = std::round(inoutput);
 		
+		std::cout << input[1] << ", " << input[2] << ", " << inoutput << ", " << netoutput << std::endl;
+
 
 		//TODO-4 bereken error, delta, en deltahidden
 		error = target - netoutput;
@@ -185,10 +195,12 @@ int main (int argc, char* argv[ ]) {
 		for (j = 0; j < MAX; j++)
 			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
 		
-		for (k = 0; k < MAX; k++)
+		for (k = 1; k < MAX; k++)
 			for (j = 0; j < MAX; j++)
 				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
 	}//for
+
+	std::cout << input[1] << ", " << input[2] << ", " << netoutput << std::endl;
 
 	//TODO-6 beoordeel het netwerk en rapporteer
 
