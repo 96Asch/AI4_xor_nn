@@ -1,6 +1,6 @@
-CC = g++
+CXX ?= g++
 
-CompileParms = -g -Wall -Wextra -pedantic -std=c++11 -O2
+CXXFLAGS = -Wall -Wextra -pedantic -std=c++11 -g -effc++
 
 OBJS = nnskelet.o
 
@@ -11,16 +11,18 @@ EXEC = AI4
 OS1: clean build
 	
 build: $(OBJS)
-	$(CC) $(OBJS) -o $(EXEC)
+	$(CXX) -g $(OBJS) -o $(EXEC)
 
 %.o: %.c $(DEPS)
-	$(CC) $(CompileParms) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 clean:
 	$(RM) $(OBJS) $(EXEC)
 
 c:
 	$(RM) $(OBJS)
+	$(RM) vgco*
 
 e:
 	$(RM) $(EXEC)
+	$(RM) vgco*

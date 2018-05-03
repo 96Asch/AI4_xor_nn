@@ -77,25 +77,26 @@ bool op_success(double a, double b, bool c) {
 //*********************************************************************
 
 void copyArray(double src[MAX], double* dest) {
-	for(int i = 1; i < MAX; i++)
+	for(unsigned i = 0; i < MAX; i++)
 		dest[i] = src[i];
 }
 
-void setHiddenLayer(size_t inputs, size_t hiddens, double bias, double weights[MAX][MAX], double activation[MAX], double* output) {
-	for (unsigned i = 0; i < inputs; i++) {
-		for (unsigned j = 1; j < hiddens; j++) {
-			output[i+1] += weights[i][j] * activation[j];
-		}
+void setHiddenLayer(size_t inputs, size_t hiddens, double weights[MAX][MAX], double activation[MAX], double inhidden[MAX], double output[MAX]) {
+	for (unsigned i = 0; i < hiddens+1; i++) {
+		output[i] = 0;
+		for (unsigned j = 0; j < inputs+1; j++)
+			output[i] += activation[j]*weights[i][j];
+		inhidden[i] = output[i];
+		output[i] = g(output[i]);
 	}
-	for(unsigned i = 1; i < hiddens; i++)
-		output[i] = g(output[i]+ bias);
 }
 
-void setOutputLayer(size_t size, double bias, double weights[MAX], double activation[MAX], double & output) {
-	for(unsigned i = 1; i < size; i++) {
+void setOutputLayer(size_t size, double weights[MAX], double activation[MAX], double & inoutput, double & netoutput) {
+	double output = 0;
+	for(unsigned i = 0; i < size+1; i++)
 		output += weights[i] * activation[i];
-	}
-	output = g(output + bias);
+	inoutput = output;
+	netoutput = g(output);
 }
 
 
@@ -105,7 +106,7 @@ int main (int argc, char* argv[ ]) {
 		return 1;
 	}//if
 //{
-	int inputs, hiddens;            // aantal invoer- en verborgen knopen
+	unsigned inputs, hiddens;            // aantal invoer- en verborgen knopen
 	double input[MAX];              // de invoer is input[1]...input[inputs]
 	double inputtohidden[MAX][MAX]; // gewichten van invoerknopen 0..inputs
 	                                // naar verborgen knopen 1..hiddens
@@ -121,7 +122,7 @@ int main (int argc, char* argv[ ]) {
 	double delta;                   // de delta voor de uitvoerknoop
 	double deltahidden[MAX];        // de delta's voor de verborgen 
 	                                // knopen 1..hiddens
-	int epochs;                     // aantal trainingsvoorbeelden
+	unsigned epochs;                     // aantal trainingsvoorbeelden
 	char* fName = NULL;
 	inputs = atoi (argv[1]);
 	hiddens = atoi (argv[2]);
@@ -174,29 +175,29 @@ int main (int argc, char* argv[ ]) {
 		
 		//TODO-3 stuur het voorbeeld door het netwerk
 		// reken inhidden's uit, acthidden's, inoutput en netoutput
-		copyArray(input, inhidden); //inputs zijn de invoer van de eerste laag van de hidden knopen.
-		setHiddenLayer(inputs, hiddens, input[0], inputtohidden, inhidden, acthidden); // bereken de output van de hidden laag.
+		//copyArray(input, inhidden); //inputs zijn de invoer van de eerste laag van de hidden knopen.
+		// std::copy(std::begin(input), std::end(input), std::begin(inhidden));
+		setHiddenLayer(inputs, hiddens, inputtohidden, input, inhidden, acthidden); // bereken de output van de hidden laag.
 
 		//Set inoutput by calculating acthidden.
-		setOutputLayer(hiddens, acthidden[0], hiddentooutput, acthidden, inoutput);
+		setOutputLayer(hiddens, hiddentooutput, acthidden, inoutput, netoutput);
 		//Set netoutput to 0 or 1 based on inoutput.
-		netoutput = std::round(inoutput);
 		
-		std::cout << input[1] << ", " << input[2] << ", " << inoutput << ", " << netoutput << std::endl;
+		//std::cout << input[1] << ", " << input[2] << ", " << inoutput << ", " << netoutput << std::endl;
 
 
 		//TODO-4 bereken error, delta, en deltahidden
 		error = target - netoutput;
 		delta = error * gprime(inoutput);
-		for (j = 0; j < MAX; j++)
+		for (j = 0; j < hiddens+1; j++)
 			deltahidden[j] = gprime(inhidden[j]) * hiddentooutput[j] * delta;
 
 		//TODO-5 update gewichten hiddentooutput en inputtohidden
-		for (j = 0; j < MAX; j++)
+		for (j = 0; j < hiddens+1; j++)
 			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
 		
-		for (k = 1; k < MAX; k++)
-			for (j = 0; j < MAX; j++)
+		for (k = 0; k < inputs+1; k++)
+			for (j = 1; j < hiddens+1; j++)
 				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
 	}//for
 
