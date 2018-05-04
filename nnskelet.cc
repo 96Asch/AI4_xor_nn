@@ -17,10 +17,10 @@
 
 using namespace std;
 
-const unsigned MAX = 2000;
+const unsigned MAX = 200;
 const double ALPHA = 0.1;
 const double BETA = 1.0;
-const unsigned Max_filesize = 10;
+
 enum Op {
 	XOR,
 	OR,
@@ -28,10 +28,11 @@ enum Op {
 };
 
 // Input variables
-unsigned i_epochs = 4000;
+unsigned i_epochs = 500000;
 unsigned i_hidden_amount = 4;
 unsigned i_inputs_amount = 2;
 unsigned i_runs=1;
+double i_accepted_error = 0.1;
 Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
@@ -88,7 +89,7 @@ double op(double a, double b) {
 
 // Determine if success is achieved by the network for given inputs a, b and output c
 bool op_success(double a, double b, double c) {
-	return (op(a, b) >= c-ALPHA && op(a, b) <= c+ALPHA);
+	return (op(a, b) >= c-i_accepted_error && op(a, b) <= c+i_accepted_error);
 }
 
 //*********************************************************************
@@ -114,7 +115,7 @@ void setOutputLayer(double weights[MAX], double activation[MAX], double & inoutp
 //*********************************************************************
 
 // Main neural network function. Constructed as advised by the assignment
-Result fire(string filename) {
+Result fire(char* filename) {
 	double input[MAX], inputtohidden[MAX][MAX], hiddentooutput[MAX];
 	double inhidden[MAX], acthidden[MAX], inoutput, netoutput, target;
 	double error, delta, deltahidden[MAX];
@@ -124,7 +125,7 @@ Result fire(string filename) {
 	acthidden[0] = -1;              // verborgen bias-knoop: altijd -1
 	ifstream in;
 
-	if(filename.size() != 0) {
+	if(filename) {
 		in.open(filename);
 		if(!in.is_open())
 			throw std::runtime_error("Error opening file");
@@ -138,7 +139,7 @@ Result fire(string filename) {
 	}
 
 	for ( i = 0; i < i_epochs; i++ ) {
-		if (filename.size() != 0) {
+		if (filename) {
 			std::string line;
 			if (getline(in, line)) {
 				input[1] = line[0] - '0';
@@ -174,9 +175,10 @@ Result fire(string filename) {
 
 static void showHelp(const char *progName) {
 	std::cerr << progName
-	<< " [-d hidden-amount] [-e epochs] [-f filename] [-h hidden-amount] [-i inputs] \n" <<
+	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-i inputs] " <<
 	"[-o operation] [-r runs] \t[filename]" << std::endl;
 	std::cerr << R"HERE(
+    -a error-value       accepted error value
     -d hidden-amount     Amount of hidden nodes
     -e epochs            Configure amount of epochs (training amount)
     -i inputs            Amount of inputs
@@ -194,9 +196,17 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "d:e:i:o:r:h")) != -1){
-			int x = ((c != 'h') ? std::stoi(optarg) : -1);
+		while ((c = getopt(argc, argv, "a:d:e:i:o:r:h")) != -1){
+			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
+			double d = ((c == 'a') ? atof(optarg) : -1);
 			switch (c) {
+				case 'a':
+					if (d >= -1 && d <= 1)
+						i_accepted_error = ((d > 0) ? d : d * -1);
+					else {
+						showHelp(progName);
+						exit(-1);
+					}
 				case 'd':
 					i_hidden_amount = ((x >= 0) ? x : x * -1);
 					break;
@@ -242,10 +252,10 @@ int main (int argc, char* argv[]) {
 			for (unsigned i = 0; i < i_runs; i++) {
 				total++;
 				randx = rand();
-				if (argc == 1) {
+				if (argc == 1)
 					r = fire(argv[0]);
-				} else
-					r = fire(string(""));
+				else
+					r = fire(NULL);
 				cout << r << endl;
 				if (correct_result(r))
 					corrects++;
