@@ -33,6 +33,7 @@ unsigned i_hidden_amount = 4;
 unsigned i_inputs_amount = 2;
 unsigned i_runs=1;
 double i_accepted_error = 0.1;
+bool i_relu = true;
 Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
@@ -59,6 +60,8 @@ struct Result {
 	}
 };
 
+
+
 // g-function (sigmoid)
 double g (double x) {
 	return 1 / ( 1 + exp ( - BETA * x ) );
@@ -68,6 +71,17 @@ double g (double x) {
 double gprime (double x) {
 	return BETA * g (x) * ( 1 - g (x) );
 }//gprime
+
+// rectified linear unit
+double relu(double x) {
+	return max(0.0,x);
+}
+
+double squishifier(double x) {
+	if(i_relu)
+		return relu(x);
+	return g(x);
+}
 
 // Compute random value in domain [a,b] (can be negative)
 double rand_gen(double a, double b) {
@@ -123,7 +137,7 @@ void setHiddenLayer(double weights[MAX][MAX], double activation[MAX], double inh
 		for (unsigned j = 0; j < i_inputs_amount+1; j++)
 			output[i] += activation[j]*weights[i][j];
 		inhidden[i] = output[i];
-		output[i] = g(output[i]);
+		output[i] = squishifier(output[i]);
 	}
 }
 
@@ -132,7 +146,7 @@ void setOutputLayer(double weights[MAX], double activation[MAX], double & inoutp
 	for(unsigned i = 0; i < i_hidden_amount+1; i++)
 		output += weights[i] * activation[i];
 	inoutput = output;
-	netoutput = g(output);
+	netoutput = squishifier(output);
 }
 
 //*********************************************************************
@@ -200,7 +214,7 @@ Result fire(char* filename) {
 static void showHelp(const char *progName) {
 	std::cerr << progName
 	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-i inputs] " <<
-	"[-o operation] [-r runs] \t[filename]" << std::endl;
+	"[-o operation] [-r runs] [-l relu] [filename]" << std::endl;
 	std::cerr << R"HERE(
     -a error-value       accepted error value
     -d hidden-amount     Amount of hidden nodes
@@ -208,6 +222,7 @@ static void showHelp(const char *progName) {
     -i inputs            Amount of inputs
     -o operation         Operation type. 0 = XOR, 1 = OR, 2 = AND
     -r runs              Amount of runs
+    -l 0 or 1			 Use ReLu
 )HERE";
 }
 
@@ -220,7 +235,7 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "a:d:e:i:o:r:h")) != -1){
+		while ((c = getopt(argc, argv, "a:d:e:i:o:r:l:h")) != -1){
 			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
 			double d = ((c == 'a') ? atof(optarg) : -1);
 			switch (c) {
@@ -258,6 +273,9 @@ int main (int argc, char* argv[]) {
 					break;
 				case 'r': 
 					i_runs = ((x >= 0) ? x : x * -1);
+					break;
+				case 'l':
+					i_relu = (x > 0) ? true : false;
 					break;
 				case 'h':
 				default:
