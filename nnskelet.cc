@@ -37,12 +37,24 @@ Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
 struct Result {
-	Result(){}
-	Result(double a, double b, double c) : input_one(a), input_two(b), output(c) {}
-	double input_one = 0, input_two = 0, output = 0;
+	Result(){
+		for (unsigned i = 0; i < i_inputs_amount; i++)
+			input[i] = 0;
+	}
+
+	Result(double a[MAX], double b) {
+		for (unsigned i = 0; i < i_inputs_amount; i++) {
+			input[i] = a[i];
+		}
+		output = b;
+	}
+	double input[MAX];
+	double output = 0;
 
 	friend std::ostream& operator<< (std::ostream &os, const Result& o) {
-		os << o.input_one << ", " << o.input_two << " : " << o.output;
+		for (unsigned i = 0; i < i_inputs_amount; i++)
+			os << o.input[i] << ", ";
+		os << " : " << o.output;
 		return os;
 	}
 };
@@ -64,32 +76,44 @@ double rand_gen(double a, double b) {
 
 //*********************************************************************
 //Operation-dependent expected value-functions
-static inline double xoroperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) % 2 == 1);
+static inline double xoroperation(double input[MAX]) {
+	double x;
+	for (unsigned i = 0; i < i_inputs_amount; i++)
+		x += std::round(input[i]);
+
+	return ((int)(x) % 2 == 1);
 }
 
-static inline double oroperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) >= 1);
+static inline double oroperation(double input[MAX]) {
+	double x;
+	for (unsigned i = 0; i < i_inputs_amount; i++)
+		x += std::round(input[i]);
+
+	return ((int)(x) >= 1);
 }
 
-static inline double andoperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) >= 2);
+static inline double andoperation(double input[MAX]) {
+	double x;
+	for (unsigned i = 0; i < i_inputs_amount; i++)
+		x += std::round(input[i]);
+
+	return ((unsigned)(x) >= i_inputs_amount);
 }
 
 //*********************************************************************
 // Execute globally set operation and return expected result
-double op(double a, double b) {
+double op(double input[MAX]) {
 	switch (i_op) {
-		case XOR: return xoroperation(a, b);
-		case OR:  return oroperation(a, b);
-		case AND: return andoperation(a, b);
+		case XOR: return xoroperation(input);
+		case OR:  return oroperation(input);
+		case AND: return andoperation(input);
 		default: throw std::runtime_error("No operation specified");
 	}
 }
 
 // Determine if success is achieved by the network for given inputs a, b and output c
-bool op_success(double a, double b, double c) {
-	return (op(a, b) >= c-i_accepted_error && op(a, b) <= c+i_accepted_error);
+bool op_success(double input[MAX], double c) {
+	return (op(input) >= c-i_accepted_error && op(input) <= c+i_accepted_error);
 }
 
 //*********************************************************************
@@ -142,16 +166,17 @@ Result fire(char* filename) {
 		if (filename) {
 			std::string line;
 			if (getline(in, line)) {
-				input[1] = line[0] - '0';
-				input[2] = line[3] - '0';
-				target = line[6] - '0';
+				for (unsigned i = 0; i < i_inputs_amount; i++)
+					input[i+1] = line[i*3] -'0' ;
+				target = line[i_inputs_amount * 3] - '0';
 			} else {
 				throw std::runtime_error("EOF reached while requesting more training data");
 			}
 		} else {
-			input[1] = rand() % 2;
-			input[2] = rand() % 2;
-			target = op(input[1], input[2]);
+
+			for (unsigned i = 0; i < i_inputs_amount; i++)
+				input[i+1] = rand() % 2;
+			target = op(input);
 		}
 
 		setHiddenLayer(inputtohidden, input, inhidden, acthidden);
@@ -170,7 +195,7 @@ Result fire(char* filename) {
 				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
 	}//for
 	in.close();
-	return Result(input[1], input[2], netoutput);
+	return Result(input, netoutput);
 }
 
 static void showHelp(const char *progName) {
@@ -188,7 +213,7 @@ static void showHelp(const char *progName) {
 }
 
 bool correct_result(Result r) {
-	return (op_success(r.input_one, r.input_two, r.output));
+	return (op_success(r.input, r.output));
 }
 
 
