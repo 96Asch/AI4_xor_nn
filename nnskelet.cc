@@ -38,12 +38,12 @@ Op i_op = XOR;
 // Struct to store the result acquired by running the neural network
 struct Result {
 	Result(){
-		for (unsigned i = 0; i < i_inputs_amount; i++)
+		for (unsigned i = 0; i < i_inputs_amount+1; i++)
 			input[i] = 0;
 	}
 
 	Result(double a[MAX], double b) {
-		for (unsigned i = 0; i < i_inputs_amount; i++) {
+		for (unsigned i = 1; i < i_inputs_amount+1; i++) {
 			input[i] = a[i];
 		}
 		output = b;
@@ -52,7 +52,7 @@ struct Result {
 	double output = 0;
 
 	friend std::ostream& operator<< (std::ostream &os, const Result& o) {
-		for (unsigned i = 0; i < i_inputs_amount; i++)
+		for (unsigned i = 1; i < i_inputs_amount+1; i++)
 			os << o.input[i] << ", ";
 		os << " : " << o.output;
 		return os;
@@ -77,24 +77,23 @@ double rand_gen(double a, double b) {
 //*********************************************************************
 //Operation-dependent expected value-functions
 static inline double xoroperation(double input[MAX]) {
-	double x;
-	for (unsigned i = 0; i < i_inputs_amount; i++)
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
 		x += std::round(input[i]);
-
-	return ((int)(x) % 2 == 1);
+	return ((int)(x) % i_inputs_amount == 1);
 }
 
 static inline double oroperation(double input[MAX]) {
-	double x;
-	for (unsigned i = 0; i < i_inputs_amount; i++)
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
 		x += std::round(input[i]);
 
 	return ((int)(x) >= 1);
 }
 
 static inline double andoperation(double input[MAX]) {
-	double x;
-	for (unsigned i = 0; i < i_inputs_amount; i++)
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
 		x += std::round(input[i]);
 
 	return ((unsigned)(x) >= i_inputs_amount);
