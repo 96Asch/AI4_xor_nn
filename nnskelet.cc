@@ -77,10 +77,22 @@ double relu(double x) {
 	return max(0.0,x);
 }
 
-double squishifier(double x) {
+double reluprime(double x) {
+	if(x <= 0)
+		return 0;
+	return 1;
+}
+
+double activationfunc(double x) {
 	if(i_relu)
 		return relu(x);
 	return g(x);
+}
+
+double activationprime(double x) {
+	if(i_relu)
+		return reluprime(x);
+	return gprime(x);
 }
 
 // Compute random value in domain [a,b] (can be negative)
@@ -137,7 +149,7 @@ void setHiddenLayer(double weights[MAX][MAX], double activation[MAX], double inh
 		for (unsigned j = 0; j < i_inputs_amount+1; j++)
 			output[i] += activation[j]*weights[i][j];
 		inhidden[i] = output[i];
-		output[i] = squishifier(output[i]);
+		output[i] = activationfunc(output[i]);
 	}
 }
 
@@ -146,7 +158,7 @@ void setOutputLayer(double weights[MAX], double activation[MAX], double & inoutp
 	for(unsigned i = 0; i < i_hidden_amount+1; i++)
 		output += weights[i] * activation[i];
 	inoutput = output;
-	netoutput = squishifier(output);
+	netoutput = activationfunc(output);
 }
 
 //*********************************************************************
@@ -196,9 +208,9 @@ Result fire(char* filename) {
 		setOutputLayer(hiddentooutput, acthidden, inoutput, netoutput);
 
 		error = target - netoutput;
-		delta = error * gprime(inoutput);
+		delta = error * activationprime(inoutput);
 		for (j = 0; j < i_hidden_amount+1; j++)
-			deltahidden[j] = gprime(inhidden[j]) * hiddentooutput[j] * delta;
+			deltahidden[j] = activationprime(inhidden[j]) * hiddentooutput[j] * delta;
 
 		for (j = 0; j < i_hidden_amount+1; j++)
 			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
@@ -288,7 +300,7 @@ int main (int argc, char* argv[]) {
 
 	unsigned corrects=0, total=0;
 		try {
-			unsigned randx;
+			unsigned randx, counter = 0;
 			srand(time(NULL));
 			Result r;
 			for (unsigned i = 0; i < i_runs; i++) {
@@ -298,7 +310,7 @@ int main (int argc, char* argv[]) {
 					r = fire(argv[0]);
 				else
 					r = fire(NULL);
-				cout << r << endl;
+				cout << ++counter << "\t| " << r << endl;
 				if (correct_result(r))
 					corrects++;
 				srand(randx);
@@ -309,6 +321,7 @@ int main (int argc, char* argv[]) {
 		}
 		cout <<
 		"----------------------------------------------------------" << endl <<
+		"Operation:		 " << i_op << endl <<
 		"Corrects:       " << corrects << endl <<
 		"Totals:         " << total << endl <<
 		"Percentage:     " << ((double) corrects/(double) total)*100<<'%'<<endl;
