@@ -2,11 +2,12 @@
 //
 // C++-programma voor neuraal netwerk (NN) met \'e\'en output-knoop
 // Zie www.liacs.leidenuniv.nl/~kosterswa/AI/nnhelp.pdf
-// 19 april 2018
-// Compileren: g++ -Wall -O2 -o nn nn.cc
-// Gebruik:    ./nn <inputs> <hiddens> <epochs>
-// Voorbeeld:  ./nn 2 3 100000
-//
+// 14 mei 2018
+// Compileren: make
+// Gebruik:    ./AI4 [args...]
+// Voor een lijst met argumenten, gebruik: ./AI4 -h
+
+// Voorbeeld:  ./AI4 -a 0.05 -e 500000 -i 3 -o 2 -l 1 -r 20
 
 #include <iostream>
 #include <cmath>
@@ -27,30 +28,32 @@ enum Op {
 	AND
 };
 
-// Input variables
+// Input variables (with defaults)
 unsigned i_epochs = 500000;
 unsigned i_hidden_amount = 4;
 unsigned i_inputs_amount = 2;
-unsigned i_runs=1;
+unsigned i_runs = 1;
 double i_accepted_error = 0.1;
 bool i_relu = true;
 Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
 struct Result {
-	Result(){
+	// Variables
+	double input[MAX];
+	double output = 0;
+
+	// Functions
+	Result() {
 		for (unsigned i = 0; i < i_inputs_amount+1; i++)
 			input[i] = 0;
 	}
 
 	Result(double a[MAX], double b) {
-		for (unsigned i = 1; i < i_inputs_amount+1; i++) {
+		for (unsigned i = 1; i < i_inputs_amount+1; i++)
 			input[i] = a[i];
-		}
 		output = b;
 	}
-	double input[MAX];
-	double output = 0;
 
 	friend std::ostream& operator<< (std::ostream &os, const Result& o) {
 		for (unsigned i = 1; i < i_inputs_amount+1; i++)
@@ -64,35 +67,29 @@ struct Result {
 
 // g-function (sigmoid)
 double g (double x) {
-	return 1 / ( 1 + exp ( - BETA * x ) );
+	return 1 / (1 + exp(-BETA * x ));
 }//g
 
 // Prime of g(x)
 double gprime (double x) {
-	return BETA * g (x) * ( 1 - g (x) );
+	return BETA * g(x) * (1 - g(x));
 }//gprime
 
-// rectified linear unit
+// Rectified linear unit
 double relu(double x) {
-	return max(0.0,x);
+	return max(0.0, x);
 }
 
 double reluprime(double x) {
-	if(x <= 0)
-		return 0;
-	return 1;
+	return ((x <= 0) ? 0 : 1);
 }
 
 double activationfunc(double x) {
-	if(i_relu)
-		return relu(x);
-	return g(x);
+	return ((i_relu) ? relu(x) : g(x));
 }
 
 double activationprime(double x) {
-	if(i_relu)
-		return reluprime(x);
-	return gprime(x);
+	return ((i_relu) ? reluprime(x) : gprime(x));
 }
 
 // Compute random value in domain [a,b] (can be negative)
@@ -223,23 +220,24 @@ Result fire(char* filename) {
 	return Result(input, netoutput);
 }
 
+bool correct_result(Result r) {
+	return (op_success(r.input, r.output));
+}
+
+// Function to show help when user args contain -h and on invalid input args
 static void showHelp(const char *progName) {
 	std::cerr << progName
-	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-i inputs] " <<
-	"[-o operation] [-r runs] [-l relu] [filename]" << std::endl;
+	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-l activationtype] " <<
+	"[-i inputs] [-o operation] [-r runs] [filename]" << std::endl;
 	std::cerr << R"HERE(
     -a error-value       accepted error value
     -d hidden-amount     Amount of hidden nodes
     -e epochs            Configure amount of epochs (training amount)
     -i inputs            Amount of inputs
+    -l activationtype    0 = g-function (sigmoid), 1 = ReLu
     -o operation         Operation type. 0 = XOR, 1 = OR, 2 = AND
     -r runs              Amount of runs
-    -l 0 or 1			 Use ReLu
 )HERE";
-}
-
-bool correct_result(Result r) {
-	return (op_success(r.input, r.output));
 }
 
 
@@ -247,7 +245,7 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "a:d:e:i:o:r:l:h")) != -1){
+		while ((c = getopt(argc, argv, "a:d:e:l:i:o:r:h")) != -1){
 			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
 			double d = ((c == 'a') ? atof(optarg) : -1);
 			switch (c) {
@@ -266,6 +264,13 @@ int main (int argc, char* argv[]) {
 					break;
 				case 'i':
 					i_inputs_amount = ((x >= 0) ? x : x * -1);
+					break;
+				case 'l':
+					if (x != 0 && x != 1) {
+						showHelp(progName);
+						exit(-1);
+					}
+					i_relu = (x > 0) ? true : false;
 					break;
 				case 'o':
 					switch(x) {
@@ -286,9 +291,6 @@ int main (int argc, char* argv[]) {
 				case 'r': 
 					i_runs = ((x >= 0) ? x : x * -1);
 					break;
-				case 'l':
-					i_relu = (x > 0) ? true : false;
-					break;
 				case 'h':
 				default:
 					showHelp(progName);
@@ -298,7 +300,7 @@ int main (int argc, char* argv[]) {
 		argc -= optind;
 		argv += optind;
 
-	unsigned corrects=0, total=0;
+		unsigned corrects=0, total=0;
 		try {
 			unsigned randx, counter = 0;
 			srand(time(NULL));
@@ -321,7 +323,9 @@ int main (int argc, char* argv[]) {
 		}
 		cout <<
 		"----------------------------------------------------------" << endl <<
-		"Operation:		 " << i_op << endl <<
+		"Operation:      " << ((i_op==0) ? "XOR" : ((i_op==1) ? "OR" : "AND")) 
+		<< endl << endl <<
+		"Accepted error: " << i_accepted_error << endl << endl <<
 		"Corrects:       " << corrects << endl <<
 		"Totals:         " << total << endl <<
 		"Percentage:     " << ((double) corrects/(double) total)*100<<'%'<<endl;
