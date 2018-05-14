@@ -2,11 +2,12 @@
 //
 // C++-programma voor neuraal netwerk (NN) met \'e\'en output-knoop
 // Zie www.liacs.leidenuniv.nl/~kosterswa/AI/nnhelp.pdf
-// 19 april 2018
-// Compileren: g++ -Wall -O2 -o nn nn.cc
-// Gebruik:    ./nn <inputs> <hiddens> <epochs>
-// Voorbeeld:  ./nn 2 3 100000
-//
+// 14 mei 2018
+// Compileren: make
+// Gebruik:    ./AI4 [args...]
+// Voor een lijst met argumenten, gebruik: ./AI4 -h
+
+// Voorbeeld:  ./AI4 -a 0.05 -e 500000 -i 3 -o 2 -l 1 -r 20
 
 #include <iostream>
 #include <cmath>
@@ -27,35 +28,69 @@ enum Op {
 	AND
 };
 
-// Input variables
+// Input variables (with defaults)
 unsigned i_epochs = 500000;
 unsigned i_hidden_amount = 4;
 unsigned i_inputs_amount = 2;
-unsigned i_runs=1;
+unsigned i_runs = 1;
 double i_accepted_error = 0.1;
+bool i_relu = true;
 Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
 struct Result {
-	Result(){}
-	Result(double a, double b, double c) : input_one(a), input_two(b), output(c) {}
-	double input_one = 0, input_two = 0, output = 0;
+	// Variables
+	double input[MAX];
+	double output = 0;
+
+	// Functions
+	Result() {
+		for (unsigned i = 0; i < i_inputs_amount+1; i++)
+			input[i] = 0;
+	}
+
+	Result(double a[MAX], double b) {
+		for (unsigned i = 1; i < i_inputs_amount+1; i++)
+			input[i] = a[i];
+		output = b;
+	}
 
 	friend std::ostream& operator<< (std::ostream &os, const Result& o) {
-		os << o.input_one << ", " << o.input_two << " : " << o.output;
+		for (unsigned i = 1; i < i_inputs_amount+1; i++)
+			os << o.input[i] << ", ";
+		os << " : " << o.output;
 		return os;
 	}
 };
 
+
+
 // g-function (sigmoid)
 double g (double x) {
-	return 1 / ( 1 + exp ( - BETA * x ) );
+	return 1 / (1 + exp(-BETA * x ));
 }//g
 
 // Prime of g(x)
 double gprime (double x) {
-	return BETA * g (x) * ( 1 - g (x) );
+	return BETA * g(x) * (1 - g(x));
 }//gprime
+
+// Rectified linear unit
+double relu(double x) {
+	return max(0.0, x);
+}
+
+double reluprime(double x) {
+	return ((x <= 0) ? 0 : 1);
+}
+
+double activationfunc(double x) {
+	return ((i_relu) ? relu(x) : g(x));
+}
+
+double activationprime(double x) {
+	return ((i_relu) ? reluprime(x) : gprime(x));
+}
 
 // Compute random value in domain [a,b] (can be negative)
 double rand_gen(double a, double b) {
@@ -64,32 +99,43 @@ double rand_gen(double a, double b) {
 
 //*********************************************************************
 //Operation-dependent expected value-functions
-static inline double xoroperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) % 2 == 1);
+static inline double xoroperation(double input[MAX]) {
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
+		x += std::round(input[i]);
+	return ((int)(x) % i_inputs_amount == 1);
 }
 
-static inline double oroperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) >= 1);
+static inline double oroperation(double input[MAX]) {
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
+		x += std::round(input[i]);
+
+	return ((int)(x) >= 1);
 }
 
-static inline double andoperation(double a, double b) {
-	return ((int)(std::round(a) + std::round(b)) >= 2);
+static inline double andoperation(double input[MAX]) {
+	double x = 0;
+	for (unsigned i = 1; i < i_inputs_amount+1; i++)
+		x += std::round(input[i]);
+
+	return ((unsigned)(x) >= i_inputs_amount);
 }
 
 //*********************************************************************
 // Execute globally set operation and return expected result
-double op(double a, double b) {
+double op(double input[MAX]) {
 	switch (i_op) {
-		case XOR: return xoroperation(a, b);
-		case OR:  return oroperation(a, b);
-		case AND: return andoperation(a, b);
+		case XOR: return xoroperation(input);
+		case OR:  return oroperation(input);
+		case AND: return andoperation(input);
 		default: throw std::runtime_error("No operation specified");
 	}
 }
 
 // Determine if success is achieved by the network for given inputs a, b and output c
-bool op_success(double a, double b, double c) {
-	return (op(a, b) >= c-i_accepted_error && op(a, b) <= c+i_accepted_error);
+bool op_success(double input[MAX], double c) {
+	return (op(input) >= c-i_accepted_error && op(input) <= c+i_accepted_error);
 }
 
 //*********************************************************************
@@ -100,7 +146,7 @@ void setHiddenLayer(double weights[MAX][MAX], double activation[MAX], double inh
 		for (unsigned j = 0; j < i_inputs_amount+1; j++)
 			output[i] += activation[j]*weights[i][j];
 		inhidden[i] = output[i];
-		output[i] = g(output[i]);
+		output[i] = activationfunc(output[i]);
 	}
 }
 
@@ -109,7 +155,7 @@ void setOutputLayer(double weights[MAX], double activation[MAX], double & inoutp
 	for(unsigned i = 0; i < i_hidden_amount+1; i++)
 		output += weights[i] * activation[i];
 	inoutput = output;
-	netoutput = g(output);
+	netoutput = activationfunc(output);
 }
 
 //*********************************************************************
@@ -142,25 +188,26 @@ Result fire(char* filename) {
 		if (filename) {
 			std::string line;
 			if (getline(in, line)) {
-				input[1] = line[0] - '0';
-				input[2] = line[3] - '0';
-				target = line[6] - '0';
+				for (unsigned i = 0; i < i_inputs_amount; i++)
+					input[i+1] = line[i*3] -'0' ;
+				target = line[i_inputs_amount * 3] - '0';
 			} else {
 				throw std::runtime_error("EOF reached while requesting more training data");
 			}
 		} else {
-			input[1] = rand() % 2;
-			input[2] = rand() % 2;
-			target = op(input[1], input[2]);
+
+			for (unsigned i = 0; i < i_inputs_amount; i++)
+				input[i+1] = rand() % 2;
+			target = op(input);
 		}
 
 		setHiddenLayer(inputtohidden, input, inhidden, acthidden);
 		setOutputLayer(hiddentooutput, acthidden, inoutput, netoutput);
 
 		error = target - netoutput;
-		delta = error * gprime(inoutput);
+		delta = error * activationprime(inoutput);
 		for (j = 0; j < i_hidden_amount+1; j++)
-			deltahidden[j] = gprime(inhidden[j]) * hiddentooutput[j] * delta;
+			deltahidden[j] = activationprime(inhidden[j]) * hiddentooutput[j] * delta;
 
 		for (j = 0; j < i_hidden_amount+1; j++)
 			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
@@ -170,25 +217,27 @@ Result fire(char* filename) {
 				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
 	}//for
 	in.close();
-	return Result(input[1], input[2], netoutput);
+	return Result(input, netoutput);
 }
 
+bool correct_result(Result r) {
+	return (op_success(r.input, r.output));
+}
+
+// Function to show help when user args contain -h and on invalid input args
 static void showHelp(const char *progName) {
 	std::cerr << progName
-	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-i inputs] " <<
-	"[-o operation] [-r runs] \t[filename]" << std::endl;
+	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-l activationtype] " <<
+	"[-i inputs] [-o operation] [-r runs] [filename]" << std::endl;
 	std::cerr << R"HERE(
     -a error-value       accepted error value
     -d hidden-amount     Amount of hidden nodes
     -e epochs            Configure amount of epochs (training amount)
     -i inputs            Amount of inputs
+    -l activationtype    0 = g-function (sigmoid), 1 = ReLu
     -o operation         Operation type. 0 = XOR, 1 = OR, 2 = AND
     -r runs              Amount of runs
 )HERE";
-}
-
-bool correct_result(Result r) {
-	return (op_success(r.input_one, r.input_two, r.output));
 }
 
 
@@ -196,7 +245,7 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "a:d:e:i:o:r:h")) != -1){
+		while ((c = getopt(argc, argv, "a:d:e:l:i:o:r:h")) != -1){
 			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
 			double d = ((c == 'a') ? atof(optarg) : -1);
 			switch (c) {
@@ -215,6 +264,13 @@ int main (int argc, char* argv[]) {
 					break;
 				case 'i':
 					i_inputs_amount = ((x >= 0) ? x : x * -1);
+					break;
+				case 'l':
+					if (x != 0 && x != 1) {
+						showHelp(progName);
+						exit(-1);
+					}
+					i_relu = (x > 0) ? true : false;
 					break;
 				case 'o':
 					switch(x) {
@@ -244,9 +300,9 @@ int main (int argc, char* argv[]) {
 		argc -= optind;
 		argv += optind;
 
-	unsigned corrects=0, total=0;
+		unsigned corrects=0, total=0;
 		try {
-			unsigned randx;
+			unsigned randx, counter = 0;
 			srand(time(NULL));
 			Result r;
 			for (unsigned i = 0; i < i_runs; i++) {
@@ -256,7 +312,7 @@ int main (int argc, char* argv[]) {
 					r = fire(argv[0]);
 				else
 					r = fire(NULL);
-				cout << r << endl;
+				cout << ++counter << "\t| " << r << endl;
 				if (correct_result(r))
 					corrects++;
 				srand(randx);
@@ -267,6 +323,9 @@ int main (int argc, char* argv[]) {
 		}
 		cout <<
 		"----------------------------------------------------------" << endl <<
+		"Operation:      " << ((i_op==0) ? "XOR" : ((i_op==1) ? "OR" : "AND")) 
+		<< endl << endl <<
+		"Accepted error: " << i_accepted_error << endl << endl <<
 		"Corrects:       " << corrects << endl <<
 		"Totals:         " << total << endl <<
 		"Percentage:     " << ((double) corrects/(double) total)*100<<'%'<<endl;
