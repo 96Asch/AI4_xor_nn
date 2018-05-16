@@ -140,6 +140,8 @@ bool op_success(double input[MAX], double c) {
 
 //*********************************************************************
 
+// Set the hidden layer of the neural network by doint a matrix multiplication
+// of the inputs from the previous layer with the matrix of weights.
 void setHiddenLayer(double weights[MAX][MAX], double activation[MAX], double inhidden[MAX], double output[MAX]) {
 	for (unsigned i = 0; i < i_hidden_amount+1; i++) {
 		output[i] = 0;
@@ -150,6 +152,8 @@ void setHiddenLayer(double weights[MAX][MAX], double activation[MAX], double inh
 	}
 }
 
+// Set the final output layer of the neural network by doing a vector multiplication
+// of the inputs from the previous layer with the vector of weights.
 void setOutputLayer(double weights[MAX], double activation[MAX], double & inoutput, double & netoutput) {
 	double output = 0;
 	for(unsigned i = 0; i < i_hidden_amount+1; i++)
@@ -234,12 +238,12 @@ bool correct_result(Result r) {
 // Function to show help when user args contain -h and on invalid input args
 static void showHelp(const char *progName) {
 	std::cerr << progName
-	<< "[-l learning rate] [-a error-value] [-h hidden-amount] [-e epochs] [-g useReLU] " <<
+	<< "[-l learning rate] [-a error-value] [-v hidden-amount] [-e epochs] [-g useReLU] " <<
 	"[-i inputs] [-o operation] [-r runs] [filename]" << std::endl;
 	std::cerr << R"HERE(
     -l learning rate	 The learning rate of the network
     -a error-value       accepted error value
-    -h hidden-amount     Amount of hidden nodes
+    -v hidden-amount     Amount of hidden nodes
     -e epochs            Configure amount of epochs (training amount)
     -i inputs            Amount of inputs
     -g activationtype    0 = sigmoid, 1 = ReLu
@@ -253,7 +257,7 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "l:a:h:e:i:g:o:r:h")) != -1){
+		while ((c = getopt(argc, argv, "a:e:g:i:l:o:r:v:h")) != -1){
 			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
 			double d = ((c == 'a' || c == 'l') ? atof(optarg) : -1);
 			switch (c) {
@@ -269,7 +273,7 @@ int main (int argc, char* argv[]) {
 						exit(-1);
 					}
 					break;
-				case 'd':
+				case 'v':
 					i_hidden_amount = ((x >= 0) ? x : x * -1);
 					break;
 				case 'e':
