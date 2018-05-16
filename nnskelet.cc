@@ -19,7 +19,6 @@
 using namespace std;
 
 const unsigned MAX = 200;
-const double ALPHA = 0.1;
 const double BETA = 1.0;
 
 enum Op {
@@ -29,12 +28,13 @@ enum Op {
 };
 
 // Input variables (with defaults)
+double alpha = 0.1;
 unsigned i_epochs = 500000;
 unsigned i_hidden_amount = 4;
 unsigned i_inputs_amount = 2;
 unsigned i_runs = 1;
 double i_accepted_error = 0.1;
-bool i_relu = true;
+bool i_relu = false;
 Op i_op = XOR;
 
 // Struct to store the result acquired by running the neural network
@@ -175,6 +175,13 @@ Result fire(char* filename) {
 		in.open(filename);
 		if(!in.is_open())
 			throw std::runtime_error("Error opening file");
+		string temp;
+		unsigned numlines = 0;
+		while(getline(in, temp))
+			++numlines;
+		i_epochs = numlines;
+		in.clear();
+		in.seekg(0, ios::beg);
 	}
 
 	unsigned i, j, k;
@@ -210,11 +217,11 @@ Result fire(char* filename) {
 			deltahidden[j] = activationprime(inhidden[j]) * hiddentooutput[j] * delta;
 
 		for (j = 0; j < i_hidden_amount+1; j++)
-			hiddentooutput[j] = hiddentooutput[j] + ALPHA * acthidden[j] * delta;
+			hiddentooutput[j] = hiddentooutput[j] + alpha * acthidden[j] * delta;
 		
 		for (k = 0; k < i_inputs_amount+1; k++)
 			for (j = 1; j < i_hidden_amount+1; j++)
-				inputtohidden[k][j] = inputtohidden[k][j] + ALPHA * input[k] * deltahidden[j];
+				inputtohidden[k][j] = inputtohidden[k][j] + alpha * input[k] * deltahidden[j];
 	}//for
 	in.close();
 	return Result(input, netoutput);
@@ -227,14 +234,15 @@ bool correct_result(Result r) {
 // Function to show help when user args contain -h and on invalid input args
 static void showHelp(const char *progName) {
 	std::cerr << progName
-	<< " [-a error-value] [-d hidden-amount] [-e epochs] [-l activationtype] " <<
+	<< "[-l learning rate] [-a error-value] [-h hidden-amount] [-e epochs] [-g useReLU] " <<
 	"[-i inputs] [-o operation] [-r runs] [filename]" << std::endl;
 	std::cerr << R"HERE(
+    -l learning rate	 The learning rate of the network
     -a error-value       accepted error value
-    -d hidden-amount     Amount of hidden nodes
+    -h hidden-amount     Amount of hidden nodes
     -e epochs            Configure amount of epochs (training amount)
     -i inputs            Amount of inputs
-    -l activationtype    0 = g-function (sigmoid), 1 = ReLu
+    -g activationtype    0 = sigmoid, 1 = ReLu
     -o operation         Operation type. 0 = XOR, 1 = OR, 2 = AND
     -r runs              Amount of runs
 )HERE";
@@ -245,10 +253,14 @@ int main (int argc, char* argv[]) {
 	char c;
 	const char *progName = argv[0];
 	try {
-		while ((c = getopt(argc, argv, "a:d:e:l:i:o:r:h")) != -1){
+		while ((c = getopt(argc, argv, "l:a:h:e:i:g:o:r:h")) != -1){
 			int x = ((c != 'h' && c != 'a') ? stoi(optarg) : -1);
-			double d = ((c == 'a') ? atof(optarg) : -1);
+			double d = ((c == 'a' || c == 'l') ? atof(optarg) : -1);
 			switch (c) {
+				case 'l':
+					if (d >= -1 && d <= 1)
+						alpha = ((d > 0) ? d : d * -1);
+					break;
 				case 'a':
 					if (d >= -1 && d <= 1)
 						i_accepted_error = ((d > 0) ? d : d * -1);
@@ -256,6 +268,7 @@ int main (int argc, char* argv[]) {
 						showHelp(progName);
 						exit(-1);
 					}
+					break;
 				case 'd':
 					i_hidden_amount = ((x >= 0) ? x : x * -1);
 					break;
@@ -265,7 +278,7 @@ int main (int argc, char* argv[]) {
 				case 'i':
 					i_inputs_amount = ((x >= 0) ? x : x * -1);
 					break;
-				case 'l':
+				case 'g':
 					if (x != 0 && x != 1) {
 						showHelp(progName);
 						exit(-1);
@@ -325,6 +338,8 @@ int main (int argc, char* argv[]) {
 		"----------------------------------------------------------" << endl <<
 		"Operation:      " << ((i_op==0) ? "XOR" : ((i_op==1) ? "OR" : "AND")) 
 		<< endl << endl <<
+		"Act. function:  " << (i_relu ? "ReLU" : "Sigmoid") << endl <<
+		"Learning rate:  " << alpha << endl <<
 		"Accepted error: " << i_accepted_error << endl << endl <<
 		"Corrects:       " << corrects << endl <<
 		"Totals:         " << total << endl <<

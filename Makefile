@@ -23,6 +23,10 @@ c:
 	$(RM) $(OBJS)
 	$(RM) vgco*
 
+dist: c
+	tar -czvf AI4-s1810979-s1913999.tar.gz Makefile nnskelet.cc --exclude=".*"
+
+
 e:
 	$(RM) $(EXEC)
 	$(RM) vgco*
