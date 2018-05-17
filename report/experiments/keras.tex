@@ -1,0 +1,29 @@
+\subsection{Keras netwerk}
+Als laatste vergelijken we ons neuraal netwerk met een netwerk gemaakt met behulp van Keras \cite{keras}, een neuraal netwerk API. Het Keras netwerk dat is gebruikt, is te vinden op de opdracht pagina \cite{assignment}. 
+Beiden netwerken zullen draaien met 10000 trainingssessies, 2 verborgen knopen met sigmoid als activatie functie en een leersnelheid van 0.01.
+
+\begin{table}[ht]
+    \centering
+      $\begin{array}{l || c | c | c}
+                                     & \text{Keras} & \text{Wij} \\ \hline
+        \text{Percentage \% correct} & 51 & 0 \\ \hline
+        \text{Tijd}      & 0m10.557s & 0m0.024s \\ \hline
+      \end{array}$
+    \caption{Het Keras netwerk tegen ons neuraal netwerk}
+    \label{tab:keras}
+\end{table}
+
+Hier draaien beide netwerken met 500000 trainingssessies, 10 verborgen knopen met sigmoid als activatie functie en een leersnelheid van 0.1.
+
+\begin{table}[ht]
+    \centering
+      $\begin{array}{l || c |  c | c}
+                                     & \text{Keras} & \text{Wij} \\ \hline
+        \text{Percentage \% correct} & 100 & 100 \\ \hline
+        \text{Tijd}      & 6m56.185s & 0m1.798s  \\ \hline
+      \end{array}$
+    \caption{Het Keras netwerk tegen ons neuraal netwerk}
+    \label{tab:keras}
+\end{table}
+
+We zien in Tabel \ref{tab:keras} dat Keras het significant beter doet met een relatief klein aantal verborgen knopen en trainingssessies. Het Keras netwerk behaalde een percentage van 51 terwijl ons netwerk een percentage had van 0. Bij grotere aantallen verborgen knopen en trainingssessies zijn de resultaten van beiden netwerken gelijk. Wel is er een behoorlijk verschil in de tijd om \'e\'en antwoord te geven. Ons netwerk produceert een antwoord vele malen sneller dan het Keras netwerk in beide testen. Uiteindelijk is dit een afweging van de nauwkeurigheid met snelheid. 

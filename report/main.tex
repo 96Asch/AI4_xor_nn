@@ -17,7 +17,7 @@
 \frenchspacing
 
 \usepackage{microtype}
-
+\usepackage[a4paper, total={6in, 9.5in}]{geometry}
 \usepackage[english,dutch]{babel}
 \usepackage{multirow}
 \usepackage{changepage}
@@ -63,13 +63,12 @@ Het programma moet het correcte antwoord geven op de verschillende operaties. He
 
 \begin{itemize}
     \item -a, de geaccepteerde foutmarge, deze marge bepaalt hoever een resultaat mag afwijken van het antwoord.
+    \item -d, het aantal verborgen knopen, dit is het aantal knopen in de verborgen laag.
     \item -e, het aantal trainingssessies, dit is het aantal keren dat het programma "leert" wat het correcte antwoord is.
-	\item -g, 1 als ReLU (wordt verderop besproken) wordt gebruikt anders wordt de sigmoid functie gebruikt.
     \item -i, het aantal inputs, dit is het aantal inputs voor de verschillende operaties.
-	\item -l, de leersnelheid ($\alpha$) van het neurale netwerk   
-	\item -o, de operatie, dit is de operatie die moet worden geleerd door het neuraal netwerk.
+    \item -o, de operatie, dit is de operatie die moet worden geleerd door het neuraal netwerk.
     \item -r, het aantal keer dat de trainingssessies worden verlopen om het neurale netwerk te testen.
-	\item -v, het aantal verborgen knopen, dit is het aantal knopen in de verborgen laag.
+    \item -l, 1 als ReLU (wordt verderop besproken) wordt gebruikt anders wordt de sigmoid functie gebruikt.
 \end{itemize}
 
 \section{Relevant werk}
@@ -164,39 +163,33 @@ Elk experiment wordt gedaan met de volgende standaard specificaties, tenzij ande
 \include{experiments/trainings}
 \include{experiments/inputs}
 \include{experiments/xoror}
-\include{experiments/relu_keras}
+\include{experiments/relu}
+\include{experiments/keras}
 
 
 \section{Conclusie}
 We bespreken nu de conclusies van de verschillende experimenten.
 
 \subsection{Verschillende leersnelheden}
-We zien in Figuur \ref{fig:leersneheden} dat er wel degelijk een piek is rond een $\alpha$ van 0.5 en dat hogere leersnelheden een lagere hoeveelheid correcte antwoorden geeft. Dit komt, zoals eerder gezegd, doordat hogere leersnelheden ervoor zorgen dat het netwerk zich meer aanpast aan exceptionele gevallen. Een $\alpha$ van 0.5 is groot genoeg dat het netwerk zich voldoende aanpast om zoveel mogelijk het correcte antwoord te geven en klein genoeg dat het exceptionele gevallen niet als de norm gaat zien.
+Een leersnelheid van 0.5 laat het neurale netwerk snel genoeg leren om een hoog aantal correcte antwoorden te geven. 
 
 \subsection{Aantal verborgen knopen}
-Zoals verwacht, hoe meer verborgen knopen er in het netwerk zijn, hoe beter het netwerk een correct antwoord kan geven. We zien in Figuur \ref{fig:hidden} dat de piek zich rondom de 19-22 knopen bevindt waarna het stabiel blijft. 
+Een hoger aantal knopen leidt inderdaad tot een hoger aantal correcte antwoorden. Deze stijging piekt rond de 22 knopen.
 
 \subsection{Aantal trainingssessies}
-We zien in Tabel \ref{tab:training} en Figuur \ref{fig:training} dat het netwerk inderdaad beter wordt met meer trainingssessies, zoals verwacht. De piek lijkt te zijn geraakt rond de 800000 trainingssessies, waarna er kleine verschillen zijn in opeenvolgende getallen. We kunnen zien dat er wel degelijk een limiet zit aan het aantal trainingssessies dat het netwerk kan doen, voordat het geen effect meer heeft.
+Net zoals bij de verborgen knopen, leidt een hoger aantal rainingssessies tot een hoger aantal correcte antwoorden. Er is een punt waar deze stijging piekt en daarna relatief gelijk blijft. Dit is rond de 800000 trainingssessies.
 
 \subsection{Aantal inputs}
-Meer inputs zorgt ervoor dat het netwerk vaker het correcte antwoord geeft, zoals te zien in Figuur \ref{fig:inputs}. Dit komt doordat de kans dat een XOR operatie 1 teruggeeft exponentieel kleiner wordt als het aantal inputs toeneemt. Voor 2 inputs is er 0.5 kans dat het antwoord een 1 of 0 is. Voor 4 inputs wordt dat $\frac{4}{2^4}$ en $\frac{2^4-4}{2^4}$ kans dat het antwoord een 1 of 0 is respectievelijk. Over het algemeen voor $n$ inputs is de kans dat het antwoord 1 is: $\frac{n}{2^n}$ en de kans dat het antwoord 0 is: $\frac{2^n-n}{2^n}$ of $1-\frac{n}{2^n}$ . Voor grotere $n$ wordt dit:
-
-\begin{align*}
-     \text{Het aantal enen: } \lim_{n\to\infty} \frac{n}{2^n} & \approx 0  \\
-     \text{Het aantal nullen: } \lim_{n\to\infty} 1 - \frac{n}{2^n} & \approx 1
-\end{align*}
-
-Zoals we zien , hoe groter $n$ wordt hoe kleiner de kans dat 1 het antwoord is en hoe groter de kans dat 0 het antwoord is. Dit verklaart het grote success percentage bij grotere inputs. Het netwerk wordt getraind om telkens het antwoord 0 te geven en dit werkt omdat het in de meeste gevallen ook zo is. Het probleem hiervan is dat als een 1 het antwoord is, dat het netwerk dit heel slecht kan beantwoorden en dus vrijwel altijd fout heeft.
+Het aantal inputs heeft grote gevolgen voor het leerpatroon van het netwerk. Grotere hoeveelheden inputs verkleinen de kans dat 1 het antwoord is met de XOR operatie, waardoor het netwerk de neiging heeft om alleen maar getallen te produceren die dicht bij 0 zijn. Een exceptie komt voor als 1 het antwoord moet zijn, wat het netwerk bijna nooit goed kan beantwoorden.
 
 \subsection{XOR en OR}
-Tabel \ref{tab:xoror} en Figuur \ref{fig:xoror} laat zien hoe goed het netwerk de operaties XOR en OR leert. We zien dat het netwerk de OR operatie beter leert dan de XOR operatie op beide verschillende hoeveelheden knopen. Dit kan komen doordat de kans dat de XOR operatie een 1 of 0 als antwoord heeft, $0.5$ is voor beiden, dus er is meer kans op variatie in de antwoorden die het netwerk moet geven. Voor de OR operatie is dit $0.75$ voor een 1 en $0.25$ voor een 0. Dit zorgt ervoor dat voor de OR operatie het netwerk meer geneigd is om een 1 als antwoord te geven en dus 75\% van de gevallen altijd correct is. Dus de OR operatie zal vaker correct worden beantwoord door het netwerk dan de XOR operatie.
+De OR operatie is makkelijker te leren voor het netwerk dan XOR. Dit komt doordat OR een grotere kans heeft om 1 als antwoord te hebben dan XOR. Hierdoor heeft het netwerk de neiging om 1 als antwoord te produceren bij OR en in de meeste gevallen is dit correct. XOR zorgt voor meer variatie en dus meer kans op foute antwoorden.
 
 \subsection{Sigmoid en ReLU}
-Tabel \ref{tab:relu} en Figuur \ref{fig:relu} laten het aantal correcte antwoorden van het netwerk zien met de activatie functies sigmoid en ReLU voor verschillend aantal verborgen knopen. We zien dat voor een klein aantal verborgen knopen, het netwerk beter leert met ReLU dan met sigmoid. Echter, bij grotere hoeveelheden knopen wordt dit omgedraaid en doet sigmoid het beter dan ReLU. Dit kan komen doordat ReLU geen bovengrens heeft en dus de output van het netwerk groter kan zijn dan 1. We zien wel dat ReLu significant sneller is dan sigmoid en dat de stijging veel sneller is bij sigmoid, zoals te zien op Figuur \ref{fig:relutime}.
-Dit is een van de redenen waarom ReLU vaker wordt gebruikt in de praktijk, vooral bij diepere netwerken met meerdere verborgen lagen. Omdat het netwerk daar meer lagen heeft verwachten we dat ReLU beter presteert dan sigmoid in zowel tijd als correctheid. Dit kan worden onderzocht in een volgend onderzoek.
+Sigmoid werkt beter in de meeste gevallen en produceert een stijging in correcte antwoorden bij grotere hoeveelheden knopen. ReLU daarentegen blijft relatief gelijk bij grotere hoeveelheden knopen en produceert minder correcte antwoorden, maar is vele malen sneller dan sigmoid.
 
 \subsection{Keras netwerk}
+Het Keras netwerk is aan de hand van de testen veel beter in het produceren van goede antwoorden bij kleinere aantallen verborgen knopen en trainingssessies, terwijl ons netwerk het zeer slecht in zulke gevallen doet. Op grotere hoeveelheden is het gelijk in het produceren van correcte antwoorden. Wel is het Keras netwerk velen malen langzamer dan ons netwerk.
 
 \clearpage
 
@@ -227,9 +220,10 @@ Bezocht op 7 mei 2018,
 
 \end{thebibliography}
 
+\clearpage
 
 \section*{Appendix: Code}
 Dit is de code voor het neurale netwerk.
-% \lstinputlisting{nnskelet.cc}
+\lstinputlisting{nnskelet.cc}
 
 \end{document}

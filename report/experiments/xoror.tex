@@ -17,6 +17,8 @@ De verschillen tussen het leren van de XOR en OR operaties worden hier onderzoch
 \begin{figure}[ht!]
     \centering
     \includegraphics[scale=0.3]{graphs/xoror.png}
-    \caption{Grafiek van Tabel \ref{tab:xoror}}
+    \caption{Aantal correcte antwoorden over 50 executies met operaties XOR en OR met verschillende aantallen verborgen knopen}
     \label{fig:xoror}
 \end{figure}
+
+Tabel \ref{tab:xoror} en Figuur \ref{fig:xoror} laat zien hoe goed het netwerk de operaties XOR en OR leert. We zien dat het netwerk de OR operatie beter leert dan de XOR operatie op beide verschillende hoeveelheden knopen. Dit kan komen doordat de kans dat de XOR operatie een 1 of 0 als antwoord heeft, $0.5$ is voor beiden, dus er is meer kans op variatie in de antwoorden die het netwerk moet geven. Voor de OR operatie is dit $0.75$ voor een 1 en $0.25$ voor een 0. Dit zorgt ervoor dat voor de OR operatie het netwerk meer geneigd is om een 1 als antwoord te geven en dus 75\% van de gevallen altijd correct is. Dus de OR operatie zal vaker correct worden beantwoord door het netwerk dan de XOR operatie.

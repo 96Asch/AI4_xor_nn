@@ -23,6 +23,8 @@ In dit experiment bekijken we hoe de leersnelheid $\alpha$ het neurale netwerk b
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.3]{graphs/leersnelheden.png}
-    \caption{Grafiek van Tabel \ref{tab:leersnelheden}}
+    \caption{Aantal correcte antwoorden over 50 executies met verschillende leersnelheden}
     \label{fig:leersneheden}
 \end{figure}
+
+We zien in Figuur \ref{fig:leersneheden} dat er wel degelijk een piek is rond een $\alpha$ van 0.5 en dat hogere leersnelheden een lagere hoeveelheid correcte antwoorden geeft. Dit komt, zoals eerder gezegd, doordat hogere leersnelheden ervoor zorgen dat het netwerk zich meer aanpast aan exceptionele gevallen. Een $\alpha$ van 0.5 is groot genoeg dat het netwerk zich voldoende aanpast om zoveel mogelijk het correcte antwoord te geven en klein genoeg dat het exceptionele gevallen niet als de norm gaat zien.
